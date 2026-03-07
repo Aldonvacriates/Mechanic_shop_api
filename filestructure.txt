@@ -1,0 +1,22 @@
+mechnic_shop_api_db/
+|-- .gitignore
+|-- app.py
+|-- config.py
+|-- filestructure.txt
+|-- requirements.txt
+|-- app/
+|   |-- __init__.py
+|   |-- extensions.py
+|   |-- models.py
+|   |-- blueprints/
+|   |   `-- customers/
+|   |       |-- __init__.py
+|   |       `-- routes.py
+|   `-- schemas/
+|       |-- __init__.py
+|       |-- customer_schema.py
+|       |-- mechanic_schema.py
+|       |-- part_schema.py
+|       |-- service_ticket_schema.py
+|       `-- vehicle_schema.py
+`-- venv/

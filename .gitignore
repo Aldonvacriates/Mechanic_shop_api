@@ -1,0 +1,40 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Test, lint, and coverage artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Flask/runtime local files
+instance/
+*.log
+
+# Local databases
+*.db
+*.sqlite3
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
