@@ -1,3 +1,9 @@
+"""Database models for the mechanic shop domain.
+
+Why: this module defines business entities and relationship rules in one place
+so validation and API behavior stay aligned with the data model.
+"""
+
 from datetime import datetime
 from app.extensions import db
 
@@ -9,6 +15,11 @@ from app.extensions import db
 # One customer can have many vehicles.
 # One customer can have many service tickets.
 class Customer(db.Model):
+    """Customer profile and contact record.
+
+    Why: customer data is stored once and reused by both vehicles and tickets.
+    """
+
     __tablename__ = "customers"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -25,12 +36,14 @@ class Customer(db.Model):
     vehicles = db.relationship(
         "Vehicle",
         back_populates="customer",
+        # Why: deleting a customer should clean up owned vehicles automatically.
         cascade="all, delete-orphan",
     )
 
     service_tickets = db.relationship(
         "ServiceTicket",
         back_populates="customer",
+        # Why: tickets should not outlive the customer record they belong to.
         cascade="all, delete-orphan",
     )
 
@@ -45,6 +58,12 @@ class Customer(db.Model):
 # Each vehicle belongs to one customer.
 # A vehicle can have many service tickets over time.
 class Vehicle(db.Model):
+    """Vehicle owned by a customer.
+
+    Why: separating vehicles from tickets preserves a long-lived vehicle profile
+    across many visits.
+    """
+
     __tablename__ = "vehicles"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -62,6 +81,7 @@ class Vehicle(db.Model):
     service_tickets = db.relationship(
         "ServiceTicket",
         back_populates="vehicle",
+        # Why: removing a vehicle should remove its dependent service history.
         cascade="all, delete-orphan",
     )
 
@@ -76,6 +96,12 @@ class Vehicle(db.Model):
 # A mechanic can work on many service tickets.
 # The many-to-many relationship is handled by TicketMechanic.
 class Mechanic(db.Model):
+    """Mechanic employee record.
+
+    Why: mechanics are modeled independently so assignment history can be tracked
+    across many service tickets.
+    """
+
     __tablename__ = "mechanics"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -94,6 +120,7 @@ class Mechanic(db.Model):
     ticket_assignments = db.relationship(
         "TicketMechanic",
         back_populates="mechanic",
+        # Why: assignment rows should be removed if a mechanic is removed.
         cascade="all, delete-orphan",
     )
 
@@ -108,6 +135,11 @@ class Mechanic(db.Model):
 # Each service ticket belongs to one customer and one vehicle.
 # A service ticket can have many mechanics and many parts.
 class ServiceTicket(db.Model):
+    """Repair order for a customer vehicle visit.
+
+    Why: tickets capture point-in-time work details that can change per visit.
+    """
+
     __tablename__ = "service_tickets"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -128,12 +160,14 @@ class ServiceTicket(db.Model):
     mechanics = db.relationship(
         "TicketMechanic",
         back_populates="service_ticket",
+        # Why: assignment rows are meaningful only while their ticket exists.
         cascade="all, delete-orphan",
     )
 
     parts = db.relationship(
         "TicketPart",
         back_populates="service_ticket",
+        # Why: part usage rows should not remain after a ticket is deleted.
         cascade="all, delete-orphan",
     )
 
@@ -147,6 +181,11 @@ class ServiceTicket(db.Model):
 # Join table between service tickets and mechanics.
 # Adds extra information like role and hours_worked.
 class TicketMechanic(db.Model):
+    """Join entity connecting mechanics to tickets.
+
+    Why: this table stores assignment-specific fields like role and hours worked.
+    """
+
     __tablename__ = "ticket_mechanics"
 
     ticket_id = db.Column(
@@ -175,6 +214,12 @@ class TicketMechanic(db.Model):
 # Stores parts inventory.
 # A part can be used in many service tickets.
 class Part(db.Model):
+    """Parts inventory record.
+
+    Why: inventory is tracked separately so the same part can be reused on many
+    tickets.
+    """
+
     __tablename__ = "parts"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -186,6 +231,7 @@ class Part(db.Model):
     ticket_parts = db.relationship(
         "TicketPart",
         back_populates="part",
+        # Why: usage rows must be removed when a part is deleted.
         cascade="all, delete-orphan",
     )
 
@@ -199,6 +245,11 @@ class Part(db.Model):
 # Join table between service tickets and parts.
 # Tracks quantity and unit price used on a ticket.
 class TicketPart(db.Model):
+    """Join entity connecting parts to tickets.
+
+    Why: quantity and price can vary per ticket, so they belong on the join row.
+    """
+
     __tablename__ = "ticket_parts"
 
     ticket_id = db.Column(

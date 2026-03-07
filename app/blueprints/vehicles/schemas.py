@@ -1,8 +1,16 @@
+"""Vehicle blueprint-specific schemas.
+
+Why: this local schema keeps vehicle endpoint serialization rules close to the
+route logic that uses them.
+"""
+
 from app.extensions import ma
 from app.models import Vehicle
 
 
 class VehicleSchema(ma.SQLAlchemyAutoSchema):
+    """Schema used by vehicle endpoints."""
+
     class Meta:
         model = Vehicle
         load_instance = False

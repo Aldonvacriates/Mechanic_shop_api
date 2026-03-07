@@ -1,8 +1,14 @@
+"""Part serialization schemas.
+
+Why: part fields are centralized here so inventory payloads remain consistent.
+"""
+
 from app.extensions import ma
 from app.models import Part
 
 
 class PartSchema(ma.SQLAlchemyAutoSchema):
+    """Schema for part inventory records."""
 
     class Meta:
         model = Part

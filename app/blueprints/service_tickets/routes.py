@@ -1,3 +1,9 @@
+"""Service ticket API routes.
+
+Why: this module enforces ticket workflow constraints (owner/vehicle integrity
+and assignment uniqueness) before commits are saved.
+"""
+
 from flask import request, jsonify
 from sqlalchemy import select
 
@@ -9,11 +15,14 @@ from .schemas import service_ticket_schema, service_tickets_schema
 
 @service_tickets_bp.route("/", methods=["POST"])
 def create_service_ticket():
+    """Create a service ticket tied to an existing customer and vehicle."""
+
     data = request.get_json()
 
     if not data:
         return jsonify({"error": "Request body is required"}), 400
 
+    # Why: every ticket must be anchored to both owner and vehicle records.
     required_fields = ["customer_id", "vehicle_id"]
     for field in required_fields:
         if field not in data:
@@ -27,6 +36,7 @@ def create_service_ticket():
     if not vehicle:
         return jsonify({"error": "Vehicle not found"}), 404
 
+    # Why: prevents creating tickets for a vehicle owned by another customer.
     if vehicle.customer_id != customer.id:
         return jsonify({"error": "Vehicle does not belong to this customer"}), 400
 
@@ -52,6 +62,8 @@ def create_service_ticket():
     "/<int:ticket_id>/assign-mechanic/<int:mechanic_id>", methods=["PUT"]
 )
 def assign_mechanic(ticket_id, mechanic_id):
+    """Assign one mechanic to a ticket with optional role/hours metadata."""
+
     service_ticket = db.session.get(ServiceTicket, ticket_id)
     if not service_ticket:
         return jsonify({"error": "Service ticket not found"}), 404
@@ -60,6 +72,7 @@ def assign_mechanic(ticket_id, mechanic_id):
     if not mechanic:
         return jsonify({"error": "Mechanic not found"}), 404
 
+    # Why: assignment rows are unique per ticket/mechanic pair.
     existing_assignment = db.session.execute(
         select(TicketMechanic).where(
             TicketMechanic.ticket_id == ticket_id,
@@ -89,6 +102,8 @@ def assign_mechanic(ticket_id, mechanic_id):
     "/<int:ticket_id>/remove-mechanic/<int:mechanic_id>", methods=["PUT"]
 )
 def remove_mechanic(ticket_id, mechanic_id):
+    """Remove one mechanic assignment from a ticket."""
+
     service_ticket = db.session.get(ServiceTicket, ticket_id)
     if not service_ticket:
         return jsonify({"error": "Service ticket not found"}), 404
@@ -111,6 +126,8 @@ def remove_mechanic(ticket_id, mechanic_id):
 
 @service_tickets_bp.route("/", methods=["GET"])
 def get_service_tickets():
+    """Return all service tickets."""
+
     query = select(ServiceTicket)
     tickets = db.session.execute(query).scalars().all()
     return service_tickets_schema.jsonify(tickets), 200
@@ -118,6 +135,8 @@ def get_service_tickets():
 
 @service_tickets_bp.route("/<int:ticket_id>", methods=["GET"])
 def get_service_ticket(ticket_id):
+    """Return a single service ticket by id."""
+
     ticket = db.session.get(ServiceTicket, ticket_id)
 
     if not ticket:
@@ -128,6 +147,8 @@ def get_service_ticket(ticket_id):
 
 @service_tickets_bp.route("/<int:ticket_id>", methods=["PUT"])
 def update_service_ticket(ticket_id):
+    """Update editable service ticket fields with referential checks."""
+
     ticket = db.session.get(ServiceTicket, ticket_id)
     if not ticket:
         return jsonify({"error": "Service ticket not found"}), 404
@@ -136,6 +157,7 @@ def update_service_ticket(ticket_id):
     if not data:
         return jsonify({"error": "Request body is required"}), 400
 
+    # Why: explicit allowlist blocks unsupported or unsafe field mutation.
     allowed_fields = {
         "customer_id",
         "vehicle_id",
@@ -163,6 +185,7 @@ def update_service_ticket(ticket_id):
     if not vehicle:
         return jsonify({"error": "Vehicle not found"}), 404
 
+    # Why: keeps ticket ownership consistent after updates.
     if vehicle.customer_id != customer.id:
         return jsonify({"error": "Vehicle does not belong to this customer"}), 400
 
@@ -175,6 +198,8 @@ def update_service_ticket(ticket_id):
 
 @service_tickets_bp.route("/<int:ticket_id>", methods=["DELETE"])
 def delete_service_ticket(ticket_id):
+    """Delete a service ticket by id."""
+
     ticket = db.session.get(ServiceTicket, ticket_id)
     if not ticket:
         return jsonify({"error": "Service ticket not found"}), 404

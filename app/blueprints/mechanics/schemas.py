@@ -1,8 +1,16 @@
+"""Mechanic blueprint-specific schemas.
+
+Why: route-level schemas are kept near the blueprint to make endpoint behavior
+easy to read and maintain.
+"""
+
 from app.extensions import ma
 from app.models import Mechanic
 
 
 class MechanicSchema(ma.SQLAlchemyAutoSchema):
+    """Schema used by mechanic endpoints."""
+
     class Meta:
         model = Mechanic
         load_instance = False

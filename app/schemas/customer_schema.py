@@ -1,3 +1,8 @@
+"""Customer serialization schemas.
+
+Why: schemas enforce request shape and keep API responses consistent.
+"""
+
 from marshmallow import fields
 from app.extensions import ma
 from app.models import Customer
@@ -5,7 +10,13 @@ from app.schemas.vehicle_schema import VehicleSchema
 
 
 class CustomerSchema(ma.SQLAlchemyAutoSchema):
+    """Customer payload schema including owned vehicles.
 
+    Why: embedding vehicles saves a follow-up query when clients show customer
+    profile details.
+    """
+
+    # Why: exposes related vehicles to provide a complete customer view.
     vehicles = fields.Nested(VehicleSchema, many=True)
 
     class Meta:

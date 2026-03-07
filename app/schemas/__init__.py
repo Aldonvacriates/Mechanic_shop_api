@@ -1,3 +1,9 @@
+"""Shared schema exports.
+
+Why: importing from this module gives routes a single stable import path for
+serialization objects.
+"""
+
 from .customer_schema import customer_schema, customers_schema
 from .vehicle_schema import vehicle_schema, vehicles_schema
 from .mechanic_schema import mechanic_schema, mechanics_schema

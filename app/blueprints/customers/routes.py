@@ -1,3 +1,9 @@
+"""Customer API routes.
+
+Why: this module handles customer CRUD with validation and uniqueness checks so
+bad records are rejected before persistence.
+"""
+
 from flask import request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy import select
@@ -11,6 +17,8 @@ from . import customers_bp
 # CREATE CUSTOMER
 @customers_bp.route("/", methods=["POST"])
 def create_customer():
+    """Create a customer record from validated request data."""
+
     data = request.get_json()
 
     if not data:
@@ -21,6 +29,7 @@ def create_customer():
     except ValidationError as e:
         return jsonify(e.messages), 400
 
+    # Why: email is treated as unique contact identity for customers.
     query = select(Customer).where(Customer.email == user_data.email)
     existing_customer = db.session.execute(query).scalars().first()
 
@@ -36,6 +45,8 @@ def create_customer():
 # GET ALL CUSTOMERS
 @customers_bp.route("/", methods=["GET"])
 def get_customers():
+    """Return all customers for list views and admin pages."""
+
     query = select(Customer)
     customers = db.session.execute(query).scalars().all()
 
@@ -45,6 +56,8 @@ def get_customers():
 # GET ONE CUSTOMER
 @customers_bp.route("/<int:customer_id>", methods=["GET"])
 def get_customer(customer_id):
+    """Return one customer by id."""
+
     customer = db.session.get(Customer, customer_id)
 
     if not customer:
@@ -56,6 +69,8 @@ def get_customer(customer_id):
 # UPDATE CUSTOMER
 @customers_bp.route("/<int:customer_id>", methods=["PUT"])
 def update_customer(customer_id):
+    """Update a customer with partial payload support."""
+
     customer = db.session.get(Customer, customer_id)
 
     if not customer:
@@ -71,6 +86,7 @@ def update_customer(customer_id):
     except ValidationError as e:
         return jsonify(e.messages), 400
 
+    # Why: prevent two customers from sharing the same email.
     if hasattr(validated_data, "email") and validated_data.email:
         query = select(Customer).where(
             Customer.email == validated_data.email, Customer.id != customer_id
@@ -91,6 +107,8 @@ def update_customer(customer_id):
 # DELETE CUSTOMER
 @customers_bp.route("/<int:customer_id>", methods=["DELETE"])
 def delete_customer(customer_id):
+    """Delete one customer and related dependent rows via model cascades."""
+
     customer = db.session.get(Customer, customer_id)
 
     if not customer:

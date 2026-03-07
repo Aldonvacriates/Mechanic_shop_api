@@ -1,8 +1,14 @@
+"""Mechanic serialization schemas.
+
+Why: a dedicated schema layer keeps mechanic input/output fields explicit.
+"""
+
 from app.extensions import ma
 from app.models import Mechanic
 
 
 class MechanicSchema(ma.SQLAlchemyAutoSchema):
+    """Schema for creating and returning mechanic records."""
 
     class Meta:
         model = Mechanic

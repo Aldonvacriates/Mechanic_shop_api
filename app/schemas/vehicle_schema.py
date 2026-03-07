@@ -1,8 +1,15 @@
+"""Vehicle serialization schemas.
+
+Why: this schema keeps vehicle API fields controlled and validated in one
+location.
+"""
+
 from app.extensions import ma
 from app.models import Vehicle
 
 
 class VehicleSchema(ma.SQLAlchemyAutoSchema):
+    """Schema for vehicle create/update/read payloads."""
 
     class Meta:
         model = Vehicle

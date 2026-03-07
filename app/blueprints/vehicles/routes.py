@@ -1,3 +1,9 @@
+"""Vehicle API routes.
+
+Why: these endpoints enforce ownership and VIN uniqueness so vehicle records
+remain consistent and trustworthy.
+"""
+
 from flask import request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy import select
@@ -10,6 +16,8 @@ from .schemas import vehicle_schema, vehicles_schema
 
 @vehicles_bp.route("/", methods=["POST"])
 def create_vehicle():
+    """Create a vehicle after validating owner and VIN constraints."""
+
     data = request.get_json()
 
     if not data:
@@ -32,6 +40,7 @@ def create_vehicle():
     if not vin:
         return jsonify({"error": "vin is required"}), 400
 
+    # Why: VIN must be unique per vehicle to prevent duplicate records.
     existing_vehicle = db.session.execute(
         select(Vehicle).where(Vehicle.vin == vin)
     ).scalar_one_or_none()
@@ -47,6 +56,8 @@ def create_vehicle():
 
 @vehicles_bp.route("/", methods=["GET"])
 def get_vehicles():
+    """Return all vehicles."""
+
     query = select(Vehicle)
     vehicles = db.session.execute(query).scalars().all()
 
@@ -55,6 +66,8 @@ def get_vehicles():
 
 @vehicles_bp.route("/<int:vehicle_id>", methods=["GET"])
 def get_vehicle(vehicle_id):
+    """Return a single vehicle by id."""
+
     vehicle = db.session.get(Vehicle, vehicle_id)
 
     if not vehicle:
@@ -65,6 +78,8 @@ def get_vehicle(vehicle_id):
 
 @vehicles_bp.route("/<int:vehicle_id>", methods=["PUT"])
 def update_vehicle(vehicle_id):
+    """Update a vehicle while enforcing owner existence and VIN uniqueness."""
+
     vehicle = db.session.get(Vehicle, vehicle_id)
 
     if not vehicle:
@@ -85,6 +100,7 @@ def update_vehicle(vehicle_id):
             return jsonify({"error": "Customer not found"}), 404
 
     if "vin" in data:
+        # Why: keep VIN globally unique even when records are edited.
         existing_vehicle = db.session.execute(
             select(Vehicle).where(
                 Vehicle.vin == data["vin"],
@@ -104,6 +120,7 @@ def update_vehicle(vehicle_id):
         "color",
         "mileage_current",
     }
+    # Why: explicitly whitelisting fields prevents accidental mass assignment.
     for key, value in data.items():
         if key in allowed_fields:
             setattr(vehicle, key, value)
@@ -114,6 +131,8 @@ def update_vehicle(vehicle_id):
 
 @vehicles_bp.route("/<int:vehicle_id>", methods=["DELETE"])
 def delete_vehicle(vehicle_id):
+    """Delete a vehicle by id."""
+
     vehicle = db.session.get(Vehicle, vehicle_id)
 
     if not vehicle:

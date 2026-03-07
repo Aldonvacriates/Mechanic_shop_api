@@ -1,9 +1,17 @@
+"""Service ticket blueprint-specific schemas.
+
+Why: lightweight nested serializers here shape ticket responses for this
+blueprint without exposing every field from related models.
+"""
+
 from marshmallow import fields
 from app.extensions import ma
 from app.models import ServiceTicket, TicketMechanic, Mechanic, Vehicle
 
 
 class MechanicMiniSchema(ma.SQLAlchemyAutoSchema):
+    """Compact mechanic data embedded in service ticket responses."""
+
     class Meta:
         model = Mechanic
         load_instance = False
@@ -11,6 +19,8 @@ class MechanicMiniSchema(ma.SQLAlchemyAutoSchema):
 
 
 class VehicleMiniSchema(ma.SQLAlchemyAutoSchema):
+    """Vehicle summary used when a ticket payload includes its vehicle."""
+
     class Meta:
         model = Vehicle
         load_instance = False
@@ -21,6 +31,9 @@ class VehicleMiniSchema(ma.SQLAlchemyAutoSchema):
 
 
 class TicketMechanicSchema(ma.SQLAlchemyAutoSchema):
+    """Join-table view that includes assignment details and mechanic profile."""
+
+    # Expands mechanic_id into a small mechanic object for client convenience.
     mechanic = fields.Nested(MechanicMiniSchema)
 
     class Meta:
@@ -37,7 +50,11 @@ class TicketMechanicSchema(ma.SQLAlchemyAutoSchema):
 
 
 class ServiceTicketSchema(ma.SQLAlchemyAutoSchema):
+    """Full service ticket representation with vehicle and mechanic assignments."""
+
+    # Includes each assignment row (role/hours/mechanic) for the ticket.
     mechanics = fields.Nested(TicketMechanicSchema, many=True)
+    # Embeds core vehicle data so clients do not need a second request.
     vehicle = fields.Nested(VehicleMiniSchema)
 
     class Meta:

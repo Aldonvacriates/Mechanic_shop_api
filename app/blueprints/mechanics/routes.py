@@ -1,3 +1,9 @@
+"""Mechanic API routes.
+
+Why: this module centralizes mechanic CRUD rules, including email uniqueness
+checks, so route behavior stays consistent.
+"""
+
 from flask import request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy import select
@@ -10,11 +16,14 @@ from .schemas import mechanic_schema, mechanics_schema
 
 @mechanics_bp.route("/", methods=["POST"])
 def create_mechanic():
+    """Create a mechanic from validated request JSON."""
+
     try:
         mechanic_data = mechanic_schema.load(request.json)
     except ValidationError as e:
         return jsonify(e.messages), 400
 
+    # Why: mechanic email is used as a unique contact identifier.
     if mechanic_data.get("email"):
         query = select(Mechanic).where(Mechanic.email == mechanic_data["email"])
         existing_mechanic = db.session.execute(query).scalar_one_or_none()
@@ -31,6 +40,8 @@ def create_mechanic():
 
 @mechanics_bp.route("/", methods=["GET"])
 def get_mechanics():
+    """Return all mechanics."""
+
     query = select(Mechanic)
     mechanics = db.session.execute(query).scalars().all()
     return mechanics_schema.jsonify(mechanics), 200
@@ -38,6 +49,8 @@ def get_mechanics():
 
 @mechanics_bp.route("/<int:id>", methods=["PUT"])
 def update_mechanic(id):
+    """Update mechanic fields with partial payload support."""
+
     mechanic = db.session.get(Mechanic, id)
 
     if not mechanic:
@@ -48,6 +61,7 @@ def update_mechanic(id):
     except ValidationError as e:
         return jsonify(e.messages), 400
 
+    # Why: preserve unique emails when updating existing records.
     if "email" in mechanic_data:
         query = select(Mechanic).where(
             Mechanic.email == mechanic_data["email"],
@@ -70,6 +84,8 @@ def update_mechanic(id):
 
 @mechanics_bp.route("/<int:id>", methods=["DELETE"])
 def delete_mechanic(id):
+    """Delete a mechanic by id."""
+
     mechanic = db.session.get(Mechanic, id)
 
     if not mechanic:
@@ -83,6 +99,8 @@ def delete_mechanic(id):
 
 @mechanics_bp.route("/<int:id>", methods=["GET"])
 def get_mechanic(id):
+    """Return one mechanic by id."""
+
     mechanic = db.session.get(Mechanic, id)
 
     if not mechanic:
