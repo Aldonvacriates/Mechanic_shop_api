@@ -79,3 +79,13 @@ def delete_mechanic(id):
     db.session.commit()
 
     return jsonify({"message": f"Mechanic id: {id} deleted successfully."}), 200
+
+
+@mechanics_bp.route("/<int:id>", methods=["GET"])
+def get_mechanic(id):
+    mechanic = db.session.get(Mechanic, id)
+
+    if not mechanic:
+        return jsonify({"error": "Mechanic not found"}), 404
+
+    return mechanic_schema.jsonify(mechanic), 200

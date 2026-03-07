@@ -17,10 +17,12 @@ def create_app(config_name="DevelopmentConfig"):
     # register blueprints
     from app.blueprints.customers import customers_bp
     from app.blueprints.mechanics import mechanics_bp
+    from app.blueprints.vehicles import vehicles_bp
     from app.blueprints.service_tickets import service_tickets_bp
 
     app.register_blueprint(customers_bp)
     app.register_blueprint(mechanics_bp)
+    app.register_blueprint(vehicles_bp)
     app.register_blueprint(service_tickets_bp)
 
     with app.app_context():

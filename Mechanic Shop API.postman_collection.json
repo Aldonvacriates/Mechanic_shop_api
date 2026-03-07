@@ -2,24 +2,31 @@
   "info": {
     "_postman_id": "a1d5f8d2-3f7e-4f22-9b2e-0c91a4b7c123",
     "name": "Mechanic Shop API",
+    "description": "Postman collection for testing the Mechanic Shop API built with Flask, SQLAlchemy, Marshmallow, Blueprints, and the Application Factory Pattern.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "48725908"
   },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:5000"
+    }
+  ],
   "item": [
     {
       "name": "Customers",
+      "description": "CRUD requests for customer resources.",
       "item": [
         {
           "name": "Get All Customers",
           "request": {
+            "description": "Retrieve all customers from the database.",
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/customers/",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
-              "path": ["customers", ""]
+              "raw": "{{base_url}}/customers/",
+              "host": ["{{base_url}}"],
+              "path": ["customers"]
             }
           },
           "response": []
@@ -27,13 +34,12 @@
         {
           "name": "Get Specific Customer",
           "request": {
+            "description": "Retrieve one customer by ID.",
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/customers/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/customers/1",
+              "host": ["{{base_url}}"],
               "path": ["customers", "1"]
             }
           },
@@ -42,11 +48,13 @@
         {
           "name": "Create Customer",
           "request": {
+            "description": "Create a new customer.",
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
@@ -59,11 +67,9 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/customers/",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
-              "path": ["customers", ""]
+              "raw": "{{base_url}}/customers/",
+              "host": ["{{base_url}}"],
+              "path": ["customers"]
             }
           },
           "response": []
@@ -71,11 +77,13 @@
         {
           "name": "Update Customer",
           "request": {
+            "description": "Update an existing customer by ID.",
             "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
@@ -88,10 +96,8 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/customers/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/customers/1",
+              "host": ["{{base_url}}"],
               "path": ["customers", "1"]
             }
           },
@@ -100,13 +106,12 @@
         {
           "name": "Delete Customer",
           "request": {
+            "description": "Delete a customer by ID.",
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/customers/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/customers/1",
+              "host": ["{{base_url}}"],
               "path": ["customers", "1"]
             }
           },
@@ -115,19 +120,139 @@
       ]
     },
     {
+      "name": "Vehicles",
+      "description": "CRUD requests for vehicle resources. A vehicle should belong to an existing customer.",
+      "item": [
+        {
+          "name": "Get All Vehicles",
+          "request": {
+            "description": "Retrieve all vehicles from the database.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Specific Vehicle",
+          "request": {
+            "description": "Retrieve one vehicle by ID.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/1",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Vehicle",
+          "request": {
+            "description": "Create a vehicle for an existing customer.",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"vin\": \"1HGCM82633A123456\",\n  \"plate_number\": \"UT12345\",\n  \"make\": \"Honda\",\n  \"model\": \"Civic\",\n  \"year\": 2018,\n  \"color\": \"Black\",\n  \"mileage_current\": 120000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Vehicle",
+          "request": {
+            "description": "Update a vehicle by ID.",
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"color\": \"White\",\n  \"mileage_current\": 121500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/1",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Vehicle",
+          "request": {
+            "description": "Delete a vehicle by ID.",
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/1",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Mechanics",
+      "description": "CRUD requests for mechanic resources.",
       "item": [
         {
           "name": "Get All Mechanics",
           "request": {
+            "description": "Retrieve all mechanics from the database.",
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/mechanics/",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
-              "path": ["mechanics", ""]
+              "raw": "{{base_url}}/mechanics/",
+              "host": ["{{base_url}}"],
+              "path": ["mechanics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Specific Mechanic",
+          "request": {
+            "description": "Retrieve one mechanic by ID.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mechanics/1",
+              "host": ["{{base_url}}"],
+              "path": ["mechanics", "1"]
             }
           },
           "response": []
@@ -135,11 +260,13 @@
         {
           "name": "Create Mechanic",
           "request": {
+            "description": "Create a new mechanic.",
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
@@ -152,11 +279,9 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/mechanics/",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
-              "path": ["mechanics", ""]
+              "raw": "{{base_url}}/mechanics/",
+              "host": ["{{base_url}}"],
+              "path": ["mechanics"]
             }
           },
           "response": []
@@ -164,11 +289,13 @@
         {
           "name": "Update Mechanic",
           "request": {
+            "description": "Update a mechanic by ID.",
             "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
@@ -181,10 +308,8 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/mechanics/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/mechanics/1",
+              "host": ["{{base_url}}"],
               "path": ["mechanics", "1"]
             }
           },
@@ -193,13 +318,12 @@
         {
           "name": "Delete Mechanic",
           "request": {
+            "description": "Delete a mechanic by ID.",
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/mechanics/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/mechanics/1",
+              "host": ["{{base_url}}"],
               "path": ["mechanics", "1"]
             }
           },
@@ -209,18 +333,32 @@
     },
     {
       "name": "Service Tickets",
+      "description": "Requests for creating service tickets, viewing them, and assigning/removing mechanics.",
       "item": [
         {
           "name": "Get All Service Tickets",
           "request": {
+            "description": "Retrieve all service tickets from the database.",
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/service-tickets/",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
-              "path": ["service-tickets", ""]
+              "raw": "{{base_url}}/service-tickets/",
+              "host": ["{{base_url}}"],
+              "path": ["service-tickets"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Specific Service Ticket",
+          "request": {
+            "description": "Retrieve one service ticket by ID.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/service-tickets/1",
+              "host": ["{{base_url}}"],
+              "path": ["service-tickets", "1"]
             }
           },
           "response": []
@@ -228,11 +366,13 @@
         {
           "name": "Create Service Ticket",
           "request": {
+            "description": "Create a new service ticket. customer_id and vehicle_id must already exist.",
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
@@ -245,11 +385,9 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/service-tickets/",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
-              "path": ["service-tickets", ""]
+              "raw": "{{base_url}}/service-tickets/",
+              "host": ["{{base_url}}"],
+              "path": ["service-tickets"]
             }
           },
           "response": []
@@ -257,11 +395,13 @@
         {
           "name": "Assign Mechanic to Service Ticket",
           "request": {
+            "description": "Assign a mechanic to a service ticket. The service ticket and mechanic must already exist.",
             "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
             "body": {
@@ -274,10 +414,8 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/service-tickets/1/assign-mechanic/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/service-tickets/1/assign-mechanic/1",
+              "host": ["{{base_url}}"],
               "path": ["service-tickets", "1", "assign-mechanic", "1"]
             }
           },
@@ -286,13 +424,12 @@
         {
           "name": "Remove Mechanic from Service Ticket",
           "request": {
+            "description": "Remove a mechanic assignment from a service ticket.",
             "method": "PUT",
             "header": [],
             "url": {
-              "raw": "http://127.0.0.1:5000/service-tickets/1/remove-mechanic/1",
-              "protocol": "http",
-              "host": ["127", "0", "0", "1"],
-              "port": "5000",
+              "raw": "{{base_url}}/service-tickets/1/remove-mechanic/1",
+              "host": ["{{base_url}}"],
               "path": ["service-tickets", "1", "remove-mechanic", "1"]
             }
           },

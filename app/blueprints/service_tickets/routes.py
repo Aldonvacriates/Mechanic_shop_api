@@ -114,3 +114,72 @@ def get_service_tickets():
     query = select(ServiceTicket)
     tickets = db.session.execute(query).scalars().all()
     return service_tickets_schema.jsonify(tickets), 200
+
+
+@service_tickets_bp.route("/<int:ticket_id>", methods=["GET"])
+def get_service_ticket(ticket_id):
+    ticket = db.session.get(ServiceTicket, ticket_id)
+
+    if not ticket:
+        return jsonify({"error": "Service ticket not found"}), 404
+
+    return service_ticket_schema.jsonify(ticket), 200
+
+
+@service_tickets_bp.route("/<int:ticket_id>", methods=["PUT"])
+def update_service_ticket(ticket_id):
+    ticket = db.session.get(ServiceTicket, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Service ticket not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+
+    allowed_fields = {
+        "customer_id",
+        "vehicle_id",
+        "status",
+        "odometer_in",
+        "odometer_out",
+        "complaint",
+        "diagnosis",
+        "notes",
+        "closed_at",
+    }
+
+    invalid_fields = [key for key in data.keys() if key not in allowed_fields]
+    if invalid_fields:
+        return jsonify({"error": f"Invalid field(s): {', '.join(invalid_fields)}"}), 400
+
+    updated_customer_id = data.get("customer_id", ticket.customer_id)
+    updated_vehicle_id = data.get("vehicle_id", ticket.vehicle_id)
+
+    customer = db.session.get(Customer, updated_customer_id)
+    if not customer:
+        return jsonify({"error": "Customer not found"}), 404
+
+    vehicle = db.session.get(Vehicle, updated_vehicle_id)
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+
+    if vehicle.customer_id != customer.id:
+        return jsonify({"error": "Vehicle does not belong to this customer"}), 400
+
+    for key, value in data.items():
+        setattr(ticket, key, value)
+
+    db.session.commit()
+    return service_ticket_schema.jsonify(ticket), 200
+
+
+@service_tickets_bp.route("/<int:ticket_id>", methods=["DELETE"])
+def delete_service_ticket(ticket_id):
+    ticket = db.session.get(ServiceTicket, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Service ticket not found"}), 404
+
+    db.session.delete(ticket)
+    db.session.commit()
+
+    return jsonify({"message": f"Service ticket id: {ticket_id} deleted successfully."}), 200
