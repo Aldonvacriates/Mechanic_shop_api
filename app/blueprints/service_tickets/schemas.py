@@ -18,6 +18,8 @@ class VehicleMiniSchema(ma.SQLAlchemyAutoSchema):
         fields = ("id", "customer_id", "vin", "make", "model", "year")
 
 
+
+
 class TicketMechanicSchema(ma.SQLAlchemyAutoSchema):
     mechanic = fields.Nested(MechanicMiniSchema)
 
