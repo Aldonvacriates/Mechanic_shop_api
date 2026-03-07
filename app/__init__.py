@@ -1,12 +1,12 @@
 from flask import Flask
-from config import Config
+from config import config
 from app.extensions import db, ma
 
 
-def create_app(config_name):
+def create_app(config_name="DevelopmentConfig"):
 
     app = Flask(__name__)
-    app.config.from_object(f"config.{config_name}")
+    app.config.from_object(config[config_name])
 
     db.init_app(app)
     ma.init_app(app)
@@ -16,14 +16,14 @@ def create_app(config_name):
 
     # register blueprints
     from app.blueprints.customers import customers_bp
+    from app.blueprints.mechanics import mechanics_bp
+    from app.blueprints.service_tickets import service_tickets_bp
 
     app.register_blueprint(customers_bp)
+    app.register_blueprint(mechanics_bp)
+    app.register_blueprint(service_tickets_bp)
 
     with app.app_context():
         db.create_all()
-
-    @app.route("/")
-    def home():
-        return "Mechanic shop API running"
 
     return app

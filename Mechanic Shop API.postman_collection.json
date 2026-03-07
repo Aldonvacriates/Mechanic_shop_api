@@ -1,43 +1,25 @@
 {
   "info": {
-    "_postman_id": "54bf59b7-b75c-4815-8ee6-3f9b185b1129",
+    "_postman_id": "a1d5f8d2-3f7e-4f22-9b2e-0c91a4b7c123",
     "name": "Mechanic Shop API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "48725908",
-    "_collection_link": "https://go.postman.co/collection/48725908-54bf59b7-b75c-4815-8ee6-3f9b185b1129?source=collection_link"
+    "_exporter_id": "48725908"
   },
   "item": [
     {
       "name": "Customers",
       "item": [
         {
-          "name": "Get All Members",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
+          "name": "Get All Customers",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "GET",
             "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"DOB\": \"1995-06-19\",\r\n    \"email\": \"aldo1@example.com\",\r\n    \"id\": 1,\r\n    \"name\": \"Aldo Herrera\",\r\n    \"password\": \"password1\"\r\n}"
-            },
             "url": {
-              "raw": "http://127.0.0.1:5000/customers",
+              "raw": "http://127.0.0.1:5000/customers/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "5000",
-              "path": [
-                "customers"
-              ]
+              "path": ["customers", ""]
             }
           },
           "response": []
@@ -46,7 +28,14 @@
           "name": "Get Specific Customer",
           "request": {
             "method": "GET",
-            "header": []
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:5000/customers/1",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["customers", "1"]
+            }
           },
           "response": []
         },
@@ -54,10 +43,15 @@
           "name": "Create Customer",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"address_line1\": \"5669 S 1150 W\",\r\n    \"city\": \"Riverdale\",\r\n    \"created_at\": \"2026-03-07T06:14:15\",\r\n    \"email\": \"aldo@example.com\",\r\n    \"first_name\": \"Aldo\",\r\n    \"id\": 1,\r\n    \"last_name\": \"Herrera\",\r\n    \"phone\": \"5713565892\",\r\n    \"postal_code\": \"84405\",\r\n    \"state\": \"UT\",\r\n    \"vehicles\": []\r\n}",
+              "raw": "{\n  \"first_name\": \"Aldo\",\n  \"last_name\": \"Herrera\",\n  \"email\": \"aldo@example.com\",\n  \"phone\": \"5713565892\",\n  \"address_line1\": \"5669 S 1150 W\",\n  \"city\": \"Riverdale\",\n  \"state\": \"UT\",\n  \"postal_code\": \"84405\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -65,18 +59,11 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:5000/customers",
+              "raw": "http://127.0.0.1:5000/customers/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "5000",
-              "path": [
-                "customers"
-              ]
+              "path": ["customers", ""]
             }
           },
           "response": []
@@ -84,14 +71,16 @@
         {
           "name": "Update Customer",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "PUT",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "",
+              "raw": "{\n  \"phone\": \"8015557777\",\n  \"city\": \"Ogden\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -101,43 +90,210 @@
             "url": {
               "raw": "http://127.0.0.1:5000/customers/1",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "5000",
-              "path": [
-                "customers",
-                "1"
-              ]
+              "path": ["customers", "1"]
             }
           },
           "response": []
         },
         {
-          "name": "Delete Specific Customer",
+          "name": "Delete Customer",
           "request": {
-            "auth": {
-              "type": "noauth"
-            },
             "method": "DELETE",
             "header": [],
             "url": {
               "raw": "http://127.0.0.1:5000/customers/1",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "5000",
-              "path": [
-                "customers",
-                "1"
-              ]
+              "path": ["customers", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mechanics",
+      "item": [
+        {
+          "name": "Get All Mechanics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:5000/mechanics/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["mechanics", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Mechanic",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Mike\",\n  \"last_name\": \"Lopez\",\n  \"email\": \"mike@example.com\",\n  \"phone\": \"8015552222\",\n  \"address_line1\": \"123 Main St\",\n  \"city\": \"Ogden\",\n  \"state\": \"UT\",\n  \"postal_code\": \"84401\",\n  \"salary\": 55000,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:5000/mechanics/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["mechanics", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Mechanic",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"8015553333\",\n  \"city\": \"Salt Lake City\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:5000/mechanics/1",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["mechanics", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Mechanic",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:5000/mechanics/1",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["mechanics", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Service Tickets",
+      "item": [
+        {
+          "name": "Get All Service Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:5000/service-tickets/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["service-tickets", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Service Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"vehicle_id\": 1,\n  \"status\": \"open\",\n  \"odometer_in\": 120000,\n  \"complaint\": \"Brake noise\",\n  \"diagnosis\": \"Front brake pads worn\",\n  \"notes\": \"Customer requests same-day service\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:5000/service-tickets/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["service-tickets", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Mechanic to Service Ticket",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Lead Mechanic\",\n  \"hours_worked\": 2.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:5000/service-tickets/1/assign-mechanic/1",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["service-tickets", "1", "assign-mechanic", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Mechanic from Service Ticket",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:5000/service-tickets/1/remove-mechanic/1",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "5000",
+              "path": ["service-tickets", "1", "remove-mechanic", "1"]
             }
           },
           "response": []
