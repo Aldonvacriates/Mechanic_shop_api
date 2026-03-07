@@ -1,39 +1,46 @@
 # Mechanic Shop API
 
-A Flask + SQLAlchemy API for managing mechanic shop data (customers, vehicles, service tickets, mechanics, and parts).
+Flask + SQLAlchemy backend for a mechanic shop workflow.  
+It currently supports customer management, mechanic management, and service-ticket assignment flows.
 
-## Current Status
+## Current Capabilities
 
-- App factory and database models are in place.
-- Customer CRUD endpoints are implemented.
-- Other domains (vehicles, mechanics, parts, service tickets) are modeled and have schemas, but routes are not added yet.
+- Customer CRUD endpoints
+- Mechanic create/list/update/delete endpoints
+- Service ticket create/list endpoints
+- Assign and remove mechanics from a service ticket
+- SQLAlchemy models for customers, vehicles, mechanics, service tickets, parts, and join tables
 
 ## Tech Stack
 
-- Python 3
+- Python
 - Flask
 - Flask-SQLAlchemy
-- Marshmallow / Flask-Marshmallow
+- Flask-Marshmallow / Marshmallow
 - MySQL (`mysql-connector-python`)
 
 ## Project Structure
 
 ```text
 mechanic_shop_api_db/
-|-- .gitignore
-|-- README.md
 |-- app.py
 |-- config.py
-|-- filestructure.txt
-|-- requirements.txt
 `-- app/
     |-- __init__.py
     |-- extensions.py
     |-- models.py
     |-- blueprints/
-    |   `-- customers/
+    |   |-- customers/
+    |   |   |-- __init__.py
+    |   |   `-- routes.py
+    |   |-- mechanics/
+    |   |   |-- __init__.py
+    |   |   |-- routes.py
+    |   |   `-- schemas.py
+    |   `-- service_tickets/
     |       |-- __init__.py
-    |       `-- routes.py
+    |       |-- routes.py
+    |       `-- schemas.py
     `-- schemas/
         |-- __init__.py
         |-- customer_schema.py
@@ -45,7 +52,7 @@ mechanic_shop_api_db/
 
 ## Setup
 
-1. Create and activate a virtual environment (optional if you already use `venv/`):
+1. Create and activate a virtual environment:
 
 ```powershell
 python -m venv venv
@@ -64,34 +71,45 @@ pip install -r requirements.txt
 CREATE DATABASE mechanic_shop_api_db;
 ```
 
-4. Set your connection string in `config.py` (`Config.SQLALCHEMY_DATABASE_URI`).
+4. Update `Config.SQLALCHEMY_DATABASE_URI` in `config.py` with your MySQL credentials.
 
-## Run the App
+## Run the API
 
 ```powershell
 python app.py
 ```
 
-The API will be available at:
+Server default: `http://127.0.0.1:5000`
 
-- `http://127.0.0.1:5000/`
+Note: there is no `/` route right now; start testing at `/customers/`, `/mechanics/`, or `/service-tickets/`.
 
-## API Endpoints (Implemented)
+## Endpoints
 
-Base path for customer routes: `/customers`
+### Customers
 
-- `POST /customers/` - Create customer
-- `GET /customers/` - Get all customers
-- `GET /customers/<customer_id>` - Get one customer
-- `PUT /customers/<customer_id>` - Update customer
-- `DELETE /customers/<customer_id>` - Delete customer
+- `POST /customers/`
+- `GET /customers/`
+- `GET /customers/<int:customer_id>`
+- `PUT /customers/<int:customer_id>`
+- `DELETE /customers/<int:customer_id>`
 
-### Example: Create Customer
+### Mechanics
 
-```http
-POST /customers/
-Content-Type: application/json
-```
+- `POST /mechanics/`
+- `GET /mechanics/`
+- `PUT /mechanics/<int:id>`
+- `DELETE /mechanics/<int:id>`
+
+### Service Tickets
+
+- `POST /service-tickets/`
+- `GET /service-tickets/`
+- `PUT /service-tickets/<int:ticket_id>/assign-mechanic/<int:mechanic_id>`
+- `PUT /service-tickets/<int:ticket_id>/remove-mechanic/<int:mechanic_id>`
+
+## Quick Request Examples
+
+Create customer:
 
 ```json
 {
@@ -106,7 +124,29 @@ Content-Type: application/json
 }
 ```
 
+Create service ticket:
+
+```json
+{
+  "customer_id": 1,
+  "vehicle_id": 1,
+  "status": "open",
+  "odometer_in": 92000,
+  "complaint": "Brake noise while stopping"
+}
+```
+
+Assign mechanic to ticket:
+
+```json
+{
+  "role": "Lead Technician",
+  "hours_worked": 1.5
+}
+```
+
 ## Notes
 
-- Tables are created automatically on startup via `db.create_all()`.
-- The current config uses a direct connection string in `config.py`; consider moving credentials to environment variables before sharing/deploying.
+- `db.create_all()` is called on startup, so tables are auto-created if they do not exist.
+- A Postman collection is included: `Mechanic Shop API.postman_collection.json`.
+- `config.py` currently stores DB credentials in code; moving this to environment variables is recommended.
