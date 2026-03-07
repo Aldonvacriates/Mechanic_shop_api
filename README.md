@@ -20,24 +20,27 @@ A Flask + SQLAlchemy API for managing mechanic shop data (customers, vehicles, s
 
 ```text
 mechanic_shop_api_db/
-|- app.py
-|- config.py
-|- requirements.txt
-|- app/
-|  |- __init__.py
-|  |- extensions.py
-|  |- models.py
-|  |- blueprints/
-|  |  `- customers/
-|  |     |- __init__.py
-|  |     `- routes.py
-|  `- schemas/
-|     |- __init__.py
-|     |- customer_schema.py
-|     |- vehicle_schema.py
-|     |- mechanic_schema.py
-|     |- part_schema.py
-|     `- service_ticket_schema.py
+|-- .gitignore
+|-- README.md
+|-- app.py
+|-- config.py
+|-- filestructure.txt
+|-- requirements.txt
+`-- app/
+    |-- __init__.py
+    |-- extensions.py
+    |-- models.py
+    |-- blueprints/
+    |   `-- customers/
+    |       |-- __init__.py
+    |       `-- routes.py
+    `-- schemas/
+        |-- __init__.py
+        |-- customer_schema.py
+        |-- mechanic_schema.py
+        |-- part_schema.py
+        |-- service_ticket_schema.py
+        `-- vehicle_schema.py
 ```
 
 ## Setup
