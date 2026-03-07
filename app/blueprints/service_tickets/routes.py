@@ -1,5 +1,4 @@
 from flask import request, jsonify
-from marshmallow import ValidationError
 from sqlalchemy import select
 
 from app.extensions import db
@@ -27,6 +26,9 @@ def create_service_ticket():
     vehicle = db.session.get(Vehicle, data["vehicle_id"])
     if not vehicle:
         return jsonify({"error": "Vehicle not found"}), 404
+
+    if vehicle.customer_id != customer.id:
+        return jsonify({"error": "Vehicle does not belong to this customer"}), 400
 
     new_ticket = ServiceTicket(
         customer_id=data["customer_id"],
@@ -68,15 +70,16 @@ def assign_mechanic(ticket_id, mechanic_id):
     if existing_assignment:
         return jsonify({"error": "Mechanic already assigned to this ticket"}), 400
 
+    data = request.get_json(silent=True) or {}
+
     assignment = TicketMechanic(
         ticket_id=ticket_id,
         mechanic_id=mechanic_id,
-        role=request.json.get("role") if request.json else None,
-        hours_worked=request.json.get("hours_worked") if request.json else None,
+        role=data.get("role"),
+        hours_worked=data.get("hours_worked"),
     )
 
-    service_ticket.mechanics.append(assignment)
-
+    db.session.add(assignment)
     db.session.commit()
 
     return service_ticket_schema.jsonify(service_ticket), 200
@@ -100,8 +103,7 @@ def remove_mechanic(ticket_id, mechanic_id):
     if not assignment:
         return jsonify({"error": "Mechanic is not assigned to this ticket"}), 404
 
-    service_ticket.mechanics.remove(assignment)
-
+    db.session.delete(assignment)
     db.session.commit()
 
     return service_ticket_schema.jsonify(service_ticket), 200

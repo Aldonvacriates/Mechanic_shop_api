@@ -14,6 +14,7 @@ class VehicleMiniSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Vehicle
         load_instance = False
+        include_fk = True
         fields = ("id", "customer_id", "vin", "make", "model", "year")
 
 
