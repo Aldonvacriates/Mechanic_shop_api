@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.extensions import db
 from app.models import Customer
-from app.schemas import customer_schema, customers_schema
+from .schemas import customer_schema, customers_schema
 from . import customers_bp
 
 

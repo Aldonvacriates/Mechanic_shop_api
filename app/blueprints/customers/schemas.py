@@ -6,7 +6,7 @@ Why: schemas enforce request shape and keep API responses consistent.
 from marshmallow import fields
 from app.extensions import ma
 from app.models import Customer
-from app.schemas.vehicle_schema import VehicleSchema
+from app.blueprints.vehicles.schemas import VehicleSchema
 
 
 class CustomerSchema(ma.SQLAlchemyAutoSchema):
