@@ -4,6 +4,9 @@ Why: centralizing environment settings keeps app creation predictable and
 avoids hardcoding configuration in multiple places.
 """
 
+import os
+
+
 class Config:
     """Base shared settings used by all runtime environments."""
 
@@ -12,6 +15,9 @@ class Config:
     )
     # Why: disabling this avoids unnecessary overhead from change tracking.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Why: signs and verifies JWT tokens. Override via env var in real envs;
+    # the fallback keeps dev/test running without extra setup.
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
 
 class DevelopmentConfig(Config):

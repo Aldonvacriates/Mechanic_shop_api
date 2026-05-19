@@ -31,6 +31,9 @@ class Customer(db.Model):
     city = db.Column(db.String(100))
     state = db.Column(db.String(100))
     postal_code = db.Column(db.String(20))
+    # Why: stores a salted password hash for login. Stored as a hash, never
+    # plaintext, so a DB leak does not expose user credentials.
+    password_hash = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     vehicles = db.relationship(
