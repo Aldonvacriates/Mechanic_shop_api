@@ -8,7 +8,7 @@ from flask import request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy import select
 
-from app.extensions import db
+from app.extensions import db, limiter, cache
 from app.models import Customer
 from .schemas import customer_schema, customers_schema
 from . import customers_bp
@@ -16,6 +16,10 @@ from . import customers_bp
 
 # CREATE CUSTOMER
 @customers_bp.route("/", methods=["POST"])
+# Why: writes that create new records are a common abuse target (spam signups,
+# scripted account creation, brute-forcing email uniqueness). Capping per-IP
+# requests blunts those attacks without affecting legitimate single users.
+@limiter.limit("5 per minute")
 def create_customer():
     """Create a customer record from validated request data."""
 
@@ -44,6 +48,10 @@ def create_customer():
 
 # GET ALL CUSTOMERS
 @customers_bp.route("/", methods=["GET"])
+# Why: list endpoints are read-heavy and the customer set doesn't change every
+# second. Caching the response for 60s removes a full table scan on each hit
+# (admin dashboards, dropdowns) and cuts DB load when traffic spikes.
+@cache.cached(timeout=60)
 def get_customers():
     """Return all customers for list views and admin pages."""
 

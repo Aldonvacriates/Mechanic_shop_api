@@ -6,7 +6,7 @@ prevents side effects when modules are imported.
 
 from flask import Flask
 from config import config
-from app.extensions import db, ma
+from app.extensions import db, ma, limiter, cache
 
 
 def create_app(config_name="DevelopmentConfig"):
@@ -22,6 +22,8 @@ def create_app(config_name="DevelopmentConfig"):
     # Why: initializing extensions here binds them to this specific app instance.
     db.init_app(app)
     ma.init_app(app)
+    limiter.init_app(app)
+    cache.init_app(app)
 
     # Why: importing models ensures SQLAlchemy knows all tables before create_all.
     from app import models

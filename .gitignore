@@ -38,3 +38,6 @@ instance/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Scratch / generated docs not needed in repo
+filestructure.txt
