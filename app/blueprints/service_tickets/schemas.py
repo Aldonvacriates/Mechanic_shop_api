@@ -6,7 +6,14 @@ blueprint without exposing every field from related models.
 
 from marshmallow import fields
 from app.extensions import ma
-from app.models import ServiceTicket, TicketMechanic, Mechanic, Vehicle
+from app.models import (
+    ServiceTicket,
+    TicketMechanic,
+    Mechanic,
+    Vehicle,
+    Inventory,
+    ServiceTicketInventory,
+)
 
 
 class MechanicMiniSchema(ma.SQLAlchemyAutoSchema):
@@ -49,6 +56,32 @@ class TicketMechanicSchema(ma.SQLAlchemyAutoSchema):
         )
 
 
+class InventoryMiniSchema(ma.SQLAlchemyAutoSchema):
+    """Compact inventory data embedded in service ticket responses."""
+
+    class Meta:
+        model = Inventory
+        load_instance = False
+        fields = ("id", "name", "price")
+
+
+class TicketInventorySchema(ma.SQLAlchemyAutoSchema):
+    """Join-table view of a part on a ticket, including quantity."""
+
+    inventory_item = fields.Nested(InventoryMiniSchema)
+
+    class Meta:
+        model = ServiceTicketInventory
+        load_instance = False
+        include_fk = True
+        fields = (
+            "ticket_id",
+            "inventory_id",
+            "quantity",
+            "inventory_item",
+        )
+
+
 class ServiceTicketSchema(ma.SQLAlchemyAutoSchema):
     """Full service ticket representation with vehicle and mechanic assignments."""
 
@@ -56,6 +89,8 @@ class ServiceTicketSchema(ma.SQLAlchemyAutoSchema):
     mechanics = fields.Nested(TicketMechanicSchema, many=True)
     # Embeds core vehicle data so clients do not need a second request.
     vehicle = fields.Nested(VehicleMiniSchema)
+    # Lists inventory parts (with quantity) used on the ticket.
+    inventory_items = fields.Nested(TicketInventorySchema, many=True)
 
     class Meta:
         model = ServiceTicket
@@ -75,6 +110,7 @@ class ServiceTicketSchema(ma.SQLAlchemyAutoSchema):
             "closed_at",
             "vehicle",
             "mechanics",
+            "inventory_items",
         )
 
 

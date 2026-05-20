@@ -2,31 +2,106 @@
   "info": {
     "_postman_id": "a1d5f8d2-3f7e-4f22-9b2e-0c91a4b7c123",
     "name": "Mechanic Shop API",
-    "description": "Postman collection for testing the Mechanic Shop API built with Flask, SQLAlchemy, Marshmallow, Blueprints, and the Application Factory Pattern.",
+    "description": "Postman collection for the Mechanic Shop API (Flask, SQLAlchemy, Marshmallow, Blueprints, App Factory). Covers CRUD, JWT auth (customer + mechanic), rate limiting, caching, advanced queries, and the Inventory resource. Login requests auto-save tokens into the {{customer_token}} and {{mechanic_token}} collection variables.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "48725908"
   },
   "variable": [
-    {
-      "key": "base_url",
-      "value": "http://127.0.0.1:5000"
-    }
+    { "key": "base_url", "value": "http://127.0.0.1:5000" },
+    { "key": "customer_token", "value": "" },
+    { "key": "mechanic_token", "value": "" }
   ],
   "item": [
     {
-      "name": "Customers",
-      "description": "CRUD requests for customer resources.",
+      "name": "Auth",
+      "description": "Login routes for customers and mechanics. Each saves its JWT into a collection variable used by protected requests.",
       "item": [
         {
-          "name": "Get All Customers",
+          "name": "Customer Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) { pm.collectionVariables.set('customer_token', json.token); }"
+                ]
+              }
+            }
+          ],
           "request": {
-            "description": "Retrieve all customers from the database.",
+            "description": "Validate email + password (login_schema) and return a customer JWT.",
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"aldo@example.com\",\n  \"password\": \"secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/login",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mechanic Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) { pm.collectionVariables.set('mechanic_token', json.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "description": "Validate mechanic email + password and return a mechanic-scoped JWT (role=mechanic).",
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mike@example.com\",\n  \"password\": \"secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/mechanics/login",
+              "host": ["{{base_url}}"],
+              "path": ["mechanics", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "description": "CRUD requests for customer resources. Update/Delete require a customer Bearer token (id comes from the token).",
+      "item": [
+        {
+          "name": "Get All Customers (paginated)",
+          "request": {
+            "description": "Retrieve a page of customers. Supports ?page and ?per_page. Response is cached for 60s per page.",
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/customers/",
+              "raw": "{{base_url}}/customers/?page=1&per_page=10",
               "host": ["{{base_url}}"],
-              "path": ["customers"]
+              "path": ["customers", ""],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" }
+              ]
             }
           },
           "response": []
@@ -48,71 +123,74 @@
         {
           "name": "Create Customer",
           "request": {
-            "description": "Create a new customer.",
+            "description": "Create a new customer. Rate limited to 5/min. Include a password to enable login.",
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Aldo\",\n  \"last_name\": \"Herrera\",\n  \"email\": \"aldo@example.com\",\n  \"phone\": \"5713565892\",\n  \"address_line1\": \"5669 S 1150 W\",\n  \"city\": \"Riverdale\",\n  \"state\": \"UT\",\n  \"postal_code\": \"84405\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"first_name\": \"Aldo\",\n  \"last_name\": \"Herrera\",\n  \"email\": \"aldo@example.com\",\n  \"password\": \"secret123\",\n  \"phone\": \"5713565892\",\n  \"address_line1\": \"5669 S 1150 W\",\n  \"city\": \"Riverdale\",\n  \"state\": \"UT\",\n  \"postal_code\": \"84405\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/customers/",
               "host": ["{{base_url}}"],
-              "path": ["customers"]
+              "path": ["customers", ""]
             }
           },
           "response": []
         },
         {
-          "name": "Update Customer",
+          "name": "My Tickets (token required)",
           "request": {
-            "description": "Update an existing customer by ID.",
+            "description": "Return service tickets belonging to the authenticated customer. customer_id comes from the Bearer token.",
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/customers/my-tickets",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "my-tickets"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer (token required)",
+          "request": {
+            "description": "Update the authenticated customer. id is taken from the token, not the URL.",
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}", "type": "text" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"8015557777\",\n  \"city\": \"Ogden\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
-              "raw": "{{base_url}}/customers/1",
+              "raw": "{{base_url}}/customers/",
               "host": ["{{base_url}}"],
-              "path": ["customers", "1"]
+              "path": ["customers", ""]
             }
           },
           "response": []
         },
         {
-          "name": "Delete Customer",
+          "name": "Delete Customer (token required)",
           "request": {
-            "description": "Delete a customer by ID.",
+            "description": "Delete the authenticated customer. id is taken from the token.",
             "method": "DELETE",
-            "header": [],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}", "type": "text" }
+            ],
             "url": {
-              "raw": "{{base_url}}/customers/1",
+              "raw": "{{base_url}}/customers/",
               "host": ["{{base_url}}"],
-              "path": ["customers", "1"]
+              "path": ["customers", ""]
             }
           },
           "response": []
@@ -126,7 +204,6 @@
         {
           "name": "Get All Vehicles",
           "request": {
-            "description": "Retrieve all vehicles from the database.",
             "method": "GET",
             "header": [],
             "url": {
@@ -140,7 +217,6 @@
         {
           "name": "Get Specific Vehicle",
           "request": {
-            "description": "Retrieve one vehicle by ID.",
             "method": "GET",
             "header": [],
             "url": {
@@ -154,23 +230,14 @@
         {
           "name": "Create Vehicle",
           "request": {
-            "description": "Create a vehicle for an existing customer.",
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customer_id\": 1,\n  \"vin\": \"1HGCM82633A123456\",\n  \"plate_number\": \"UT12345\",\n  \"make\": \"Honda\",\n  \"model\": \"Civic\",\n  \"year\": 2018,\n  \"color\": \"Black\",\n  \"mileage_current\": 120000\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/vehicles/",
@@ -183,23 +250,14 @@
         {
           "name": "Update Vehicle",
           "request": {
-            "description": "Update a vehicle by ID.",
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"color\": \"White\",\n  \"mileage_current\": 121500\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/vehicles/1",
@@ -212,7 +270,6 @@
         {
           "name": "Delete Vehicle",
           "request": {
-            "description": "Delete a vehicle by ID.",
             "method": "DELETE",
             "header": [],
             "url": {
@@ -227,12 +284,11 @@
     },
     {
       "name": "Mechanics",
-      "description": "CRUD requests for mechanic resources.",
+      "description": "CRUD plus the advanced 'top mechanics' query. Create a mechanic with a password to enable mechanic login.",
       "item": [
         {
           "name": "Get All Mechanics",
           "request": {
-            "description": "Retrieve all mechanics from the database.",
             "method": "GET",
             "header": [],
             "url": {
@@ -244,9 +300,22 @@
           "response": []
         },
         {
+          "name": "Top Mechanics (most tickets)",
+          "request": {
+            "description": "Return mechanics ordered by number of tickets worked, busiest first.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/mechanics/top",
+              "host": ["{{base_url}}"],
+              "path": ["mechanics", "top"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get Specific Mechanic",
           "request": {
-            "description": "Retrieve one mechanic by ID.",
             "method": "GET",
             "header": [],
             "url": {
@@ -260,23 +329,15 @@
         {
           "name": "Create Mechanic",
           "request": {
-            "description": "Create a new mechanic.",
+            "description": "Create a new mechanic. Include a password to enable mechanic login.",
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Mike\",\n  \"last_name\": \"Lopez\",\n  \"email\": \"mike@example.com\",\n  \"phone\": \"8015552222\",\n  \"address_line1\": \"123 Main St\",\n  \"city\": \"Ogden\",\n  \"state\": \"UT\",\n  \"postal_code\": \"84401\",\n  \"salary\": 55000,\n  \"is_active\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"first_name\": \"Mike\",\n  \"last_name\": \"Lopez\",\n  \"email\": \"mike@example.com\",\n  \"password\": \"secret123\",\n  \"phone\": \"8015552222\",\n  \"address_line1\": \"123 Main St\",\n  \"city\": \"Ogden\",\n  \"state\": \"UT\",\n  \"postal_code\": \"84401\",\n  \"salary\": 55000,\n  \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/mechanics/",
@@ -289,23 +350,14 @@
         {
           "name": "Update Mechanic",
           "request": {
-            "description": "Update a mechanic by ID.",
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"8015553333\",\n  \"city\": \"Salt Lake City\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/mechanics/1",
@@ -318,7 +370,6 @@
         {
           "name": "Delete Mechanic",
           "request": {
-            "description": "Delete a mechanic by ID.",
             "method": "DELETE",
             "header": [],
             "url": {
@@ -333,12 +384,11 @@
     },
     {
       "name": "Service Tickets",
-      "description": "Requests for creating service tickets, viewing them, and assigning/removing mechanics.",
+      "description": "Create/view tickets, assign/remove mechanics, bulk-edit mechanics, and add inventory parts. Edit and add-part require a mechanic Bearer token.",
       "item": [
         {
           "name": "Get All Service Tickets",
           "request": {
-            "description": "Retrieve all service tickets from the database.",
             "method": "GET",
             "header": [],
             "url": {
@@ -352,7 +402,6 @@
         {
           "name": "Get Specific Service Ticket",
           "request": {
-            "description": "Retrieve one service ticket by ID.",
             "method": "GET",
             "header": [],
             "url": {
@@ -366,23 +415,15 @@
         {
           "name": "Create Service Ticket",
           "request": {
-            "description": "Create a new service ticket. customer_id and vehicle_id must already exist.",
+            "description": "Create a service ticket. customer_id and vehicle_id must already exist.",
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"customer_id\": 1,\n  \"vehicle_id\": 1,\n  \"status\": \"open\",\n  \"odometer_in\": 120000,\n  \"complaint\": \"Brake noise\",\n  \"diagnosis\": \"Front brake pads worn\",\n  \"notes\": \"Customer requests same-day service\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/service-tickets/",
@@ -395,23 +436,14 @@
         {
           "name": "Assign Mechanic to Service Ticket",
           "request": {
-            "description": "Assign a mechanic to a service ticket. The service ticket and mechanic must already exist.",
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"role\": \"Lead Mechanic\",\n  \"hours_worked\": 2.5\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{base_url}}/service-tickets/1/assign-mechanic/1",
@@ -424,13 +456,146 @@
         {
           "name": "Remove Mechanic from Service Ticket",
           "request": {
-            "description": "Remove a mechanic assignment from a service ticket.",
             "method": "PUT",
             "header": [],
             "url": {
               "raw": "{{base_url}}/service-tickets/1/remove-mechanic/1",
               "host": ["{{base_url}}"],
               "path": ["service-tickets", "1", "remove-mechanic", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Edit Ticket Mechanics (add/remove, mechanic token)",
+          "request": {
+            "description": "Bulk add/remove mechanics on a ticket via add_ids and remove_ids. Requires a mechanic Bearer token.",
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{mechanic_token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"add_ids\": [1, 2],\n  \"remove_ids\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/service-tickets/1/edit",
+              "host": ["{{base_url}}"],
+              "path": ["service-tickets", "1", "edit"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Part to Service Ticket (mechanic token)",
+          "request": {
+            "description": "Attach a single inventory part to a ticket with an optional quantity. Requires a mechanic Bearer token.",
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{mechanic_token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventory_id\": 1,\n  \"quantity\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/service-tickets/1/add-part",
+              "host": ["{{base_url}}"],
+              "path": ["service-tickets", "1", "add-part"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "description": "CRUD for shop inventory parts. Create/Update/Delete require a mechanic Bearer token; reads are open.",
+      "item": [
+        {
+          "name": "Get All Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Specific Inventory Item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/1",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Inventory Part (mechanic token)",
+          "request": {
+            "description": "Create an inventory part. Requires a mechanic Bearer token.",
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{mechanic_token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Brake Pad Set\",\n  \"price\": 49.99\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Inventory Part (mechanic token)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{mechanic_token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 44.99\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/1",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Inventory Part (mechanic token)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{mechanic_token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/1",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "1"]
             }
           },
           "response": []

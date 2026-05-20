@@ -33,11 +33,13 @@ def create_app(config_name="DevelopmentConfig"):
     from app.blueprints.mechanics import mechanics_bp
     from app.blueprints.vehicles import vehicles_bp
     from app.blueprints.service_tickets import service_tickets_bp
+    from app.blueprints.inventory import inventory_bp
 
     app.register_blueprint(customers_bp)
     app.register_blueprint(mechanics_bp)
     app.register_blueprint(vehicles_bp)
     app.register_blueprint(service_tickets_bp)
+    app.register_blueprint(inventory_bp)
 
     # Why: guarantees tables exist when running locally without migrations.
     with app.app_context():

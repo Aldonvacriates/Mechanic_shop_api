@@ -7,8 +7,17 @@ and assignment uniqueness) before commits are saved.
 from flask import request, jsonify
 from sqlalchemy import select
 
+from app.auth import mechanic_token_required
 from app.extensions import db
-from app.models import ServiceTicket, Customer, Vehicle, Mechanic, TicketMechanic
+from app.models import (
+    ServiceTicket,
+    Customer,
+    Vehicle,
+    Mechanic,
+    TicketMechanic,
+    Inventory,
+    ServiceTicketInventory,
+)
 from . import service_tickets_bp
 from .schemas import service_ticket_schema, service_tickets_schema
 
@@ -125,7 +134,10 @@ def remove_mechanic(ticket_id, mechanic_id):
 
 
 @service_tickets_bp.route("/<int:ticket_id>/edit", methods=["PUT"])
-def edit_ticket_mechanics(ticket_id):
+# Why: reshaping a ticket's mechanic roster is shop-floor work, so it requires
+# a logged-in mechanic.
+@mechanic_token_required
+def edit_ticket_mechanics(auth_mechanic_id, ticket_id):
     """Bulk add/remove mechanic assignments on a ticket in one request.
 
     Why: a single edit call (add_ids + remove_ids) lets clients reconcile a
@@ -170,6 +182,53 @@ def edit_ticket_mechanics(ticket_id):
             db.session.add(
                 TicketMechanic(ticket_id=ticket_id, mechanic_id=mechanic_id)
             )
+
+    db.session.commit()
+    return service_ticket_schema.jsonify(ticket), 200
+
+
+@service_tickets_bp.route("/<int:ticket_id>/add-part", methods=["POST"])
+# Why: adding parts to a ticket draws down shop inventory, a staff action.
+@mechanic_token_required
+def add_part_to_ticket(auth_mechanic_id, ticket_id):
+    """Attach a single inventory part to a ticket with an optional quantity.
+
+    Why: links a stocked part to a ticket; if the part is already on the ticket
+    we bump its quantity instead of creating a duplicate junction row.
+    """
+
+    ticket = db.session.get(ServiceTicket, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Service ticket not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    inventory_id = data.get("inventory_id")
+    quantity = data.get("quantity", 1)
+
+    if inventory_id is None:
+        return jsonify({"error": "inventory_id is required"}), 400
+
+    part = db.session.get(Inventory, inventory_id)
+    if not part:
+        return jsonify({"error": "Inventory item not found"}), 404
+
+    existing = db.session.execute(
+        select(ServiceTicketInventory).where(
+            ServiceTicketInventory.ticket_id == ticket_id,
+            ServiceTicketInventory.inventory_id == inventory_id,
+        )
+    ).scalar_one_or_none()
+
+    if existing:
+        existing.quantity += quantity
+    else:
+        db.session.add(
+            ServiceTicketInventory(
+                ticket_id=ticket_id,
+                inventory_id=inventory_id,
+                quantity=quantity,
+            )
+        )
 
     db.session.commit()
     return service_ticket_schema.jsonify(ticket), 200
