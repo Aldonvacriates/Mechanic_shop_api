@@ -6,10 +6,10 @@ checks, so route behavior stays consistent.
 
 from flask import request, jsonify
 from marshmallow import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.extensions import db
-from app.models import Mechanic
+from app.models import Mechanic, TicketMechanic
 from . import mechanics_bp
 from .schemas import mechanic_schema, mechanics_schema
 
@@ -43,6 +43,25 @@ def get_mechanics():
     """Return all mechanics."""
 
     query = select(Mechanic)
+    mechanics = db.session.execute(query).scalars().all()
+    return mechanics_schema.jsonify(mechanics), 200
+
+
+@mechanics_bp.route("/top", methods=["GET"])
+def top_mechanics():
+    """Return mechanics ranked by number of tickets worked, most first.
+
+    Why: surfaces the busiest mechanics for workload balancing and reporting.
+    An outer join keeps mechanics with zero assignments in the list (ranked
+    last) instead of dropping them.
+    """
+
+    query = (
+        select(Mechanic)
+        .outerjoin(TicketMechanic, Mechanic.id == TicketMechanic.mechanic_id)
+        .group_by(Mechanic.id)
+        .order_by(func.count(TicketMechanic.ticket_id).desc())
+    )
     mechanics = db.session.execute(query).scalars().all()
     return mechanics_schema.jsonify(mechanics), 200
 

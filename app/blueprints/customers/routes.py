@@ -83,19 +83,37 @@ def create_customer():
     return jsonify(customer_schema.dump(user_data)), 201
 
 
-# GET ALL CUSTOMERS
+# GET ALL CUSTOMERS (paginated)
 @customers_bp.route("/", methods=["GET"])
 # Why: list endpoints are read-heavy and the customer set doesn't change every
-# second. Caching the response for 60s removes a full table scan on each hit
-# (admin dashboards, dropdowns) and cuts DB load when traffic spikes.
-@cache.cached(timeout=60)
+# second. Caching for 60s removes a query on each hit; query_string=True keeps
+# a separate cache entry per page so pagination params aren't collapsed.
+@cache.cached(timeout=60, query_string=True)
 def get_customers():
-    """Return all customers for list views and admin pages."""
+    """Return a paginated page of customers.
+
+    Why: pagination caps response size and DB work so large customer tables
+    don't return thousands of rows in one request. Controlled via `page` and
+    `per_page` query params.
+    """
+
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
 
     query = select(Customer)
-    customers = db.session.execute(query).scalars().all()
+    # Why: error_out=False returns an empty page instead of 404 for out-of-range
+    # page numbers, which is friendlier for clients paging to the end.
+    pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
 
-    return jsonify(customers_schema.dump(customers)), 200
+    return jsonify(
+        {
+            "customers": customers_schema.dump(pagination.items),
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total": pagination.total,
+            "pages": pagination.pages,
+        }
+    ), 200
 
 
 # GET ONE CUSTOMER

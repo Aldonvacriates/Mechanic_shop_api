@@ -124,6 +124,57 @@ def remove_mechanic(ticket_id, mechanic_id):
     return service_ticket_schema.jsonify(service_ticket), 200
 
 
+@service_tickets_bp.route("/<int:ticket_id>/edit", methods=["PUT"])
+def edit_ticket_mechanics(ticket_id):
+    """Bulk add/remove mechanic assignments on a ticket in one request.
+
+    Why: a single edit call (add_ids + remove_ids) lets clients reconcile a
+    ticket's mechanic roster without firing multiple assign/remove requests.
+    """
+
+    ticket = db.session.get(ServiceTicket, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Service ticket not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    add_ids = data.get("add_ids", [])
+    remove_ids = data.get("remove_ids", [])
+
+    # Why: validate every add id up front so we don't partially mutate the
+    # roster and then fail midway on a bad id.
+    for mechanic_id in add_ids:
+        if not db.session.get(Mechanic, mechanic_id):
+            return jsonify({"error": f"Mechanic id {mechanic_id} not found"}), 404
+
+    # Why: removing assignments is a no-op when the pairing doesn't exist, so
+    # we silently skip ids that aren't currently assigned.
+    for mechanic_id in remove_ids:
+        assignment = db.session.execute(
+            select(TicketMechanic).where(
+                TicketMechanic.ticket_id == ticket_id,
+                TicketMechanic.mechanic_id == mechanic_id,
+            )
+        ).scalar_one_or_none()
+        if assignment:
+            db.session.delete(assignment)
+
+    # Why: skip ids already on the ticket to respect the join's unique pairing.
+    for mechanic_id in add_ids:
+        existing = db.session.execute(
+            select(TicketMechanic).where(
+                TicketMechanic.ticket_id == ticket_id,
+                TicketMechanic.mechanic_id == mechanic_id,
+            )
+        ).scalar_one_or_none()
+        if not existing:
+            db.session.add(
+                TicketMechanic(ticket_id=ticket_id, mechanic_id=mechanic_id)
+            )
+
+    db.session.commit()
+    return service_ticket_schema.jsonify(ticket), 200
+
+
 @service_tickets_bp.route("/", methods=["GET"])
 def get_service_tickets():
     """Return all service tickets."""
