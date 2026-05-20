@@ -1,22 +1,31 @@
 # Mechanic Shop API
 
-Flask + SQLAlchemy backend for a mechanic shop workflow.  
-It currently supports customer management, mechanic management, and service-ticket assignment flows.
+Flask + SQLAlchemy backend for a mechanic shop workflow. It manages customers,
+vehicles, mechanics, service tickets, and parts inventory, with JWT
+authentication, rate limiting, response caching, and advanced queries.
 
-## Current Capabilities
+## Features
 
-- Customer CRUD endpoints
-- Mechanic create/list/update/delete endpoints
-- Service ticket create/list endpoints
-- Assign and remove mechanics from a service ticket
-- SQLAlchemy models for customers, vehicles, mechanics, service tickets, parts, and join tables
+- **Customer, Vehicle, Mechanic, Service Ticket, and Inventory** resources with full CRUD
+- **JWT token authentication** (python-jose) for both customers and mechanics
+  - Customer login issues a customer-scoped token; mechanic login issues a mechanic-scoped token (distinguished by a `role` claim)
+  - `@token_required` and `@mechanic_token_required` decorators protect routes and pass the authenticated id to the handler
+- **Rate limiting** (Flask-Limiter) with a blanket default of 200/hour plus tighter caps on write/auth routes
+- **Response caching** (Flask-Caching) on the customer list endpoint, query-string aware so each page caches separately
+- **Advanced queries**
+  - Bulk add/remove mechanics on a ticket in one request
+  - Mechanics ranked by number of tickets worked
+  - Pagination on the customer list
+- **Inventory**: parts catalog linked to tickets through a `quantity`-bearing junction table
 
 ## Tech Stack
 
-- Python
-- Flask
+- Python / Flask
 - Flask-SQLAlchemy
 - Flask-Marshmallow / Marshmallow
+- Flask-Limiter (rate limiting)
+- Flask-Caching (caching)
+- python-jose (JWT)
 - MySQL (`mysql-connector-python`)
 
 ## Project Structure
@@ -24,30 +33,20 @@ It currently supports customer management, mechanic management, and service-tick
 ```text
 mechanic_shop_api_db/
 |-- app.py
-|-- config.py
+|-- config.py                     # DB URI + SECRET_KEY (JWT signing)
+|-- requirements.txt
+|-- Mechanic Shop API.postman_collection.json
 `-- app/
-    |-- __init__.py
-    |-- extensions.py
-    |-- models.py
-    |-- blueprints/
-    |   |-- customers/
-    |   |   |-- __init__.py
-    |   |   `-- routes.py
-    |   |-- mechanics/
-    |   |   |-- __init__.py
-    |   |   |-- routes.py
-    |   |   `-- schemas.py
-    |   `-- service_tickets/
-    |       |-- __init__.py
-    |       |-- routes.py
-    |       `-- schemas.py
-    `-- schemas/
-        |-- __init__.py
-        |-- customer_schema.py
-        |-- mechanic_schema.py
-        |-- part_schema.py
-        |-- service_ticket_schema.py
-        `-- vehicle_schema.py
+    |-- __init__.py               # app factory; registers all blueprints
+    |-- auth.py                   # encode_token, encode_mechanic_token, decorators
+    |-- extensions.py             # db, ma, limiter, cache
+    |-- models.py                 # all SQLAlchemy models + junction tables
+    `-- blueprints/
+        |-- customers/            # /login, /my-tickets, paginated CRUD
+        |-- mechanics/            # /login, /top, CRUD
+        |-- service_tickets/      # CRUD, /<id>/edit, /<id>/add-part, assign/remove
+        |-- inventory/            # CRUD (writes require a mechanic token)
+        `-- vehicles/             # CRUD
 ```
 
 ## Setup
@@ -71,7 +70,9 @@ pip install -r requirements.txt
 CREATE DATABASE mechanic_shop_api_db;
 ```
 
-4. Update `Config.SQLALCHEMY_DATABASE_URI` in `config.py` with your MySQL credentials.
+4. Update `Config.SQLALCHEMY_DATABASE_URI` in `config.py` with your MySQL
+   credentials. Set `SECRET_KEY` (env var `SECRET_KEY`) for JWT signing; a dev
+   fallback is used if unset.
 
 ## Run the API
 
@@ -81,22 +82,45 @@ python app.py
 
 Server default: `http://127.0.0.1:5000`
 
-Note: there is no `/` route right now; start testing at `/customers/`, `/mechanics/`, or `/service-tickets/`.
+There is no `/` route; start at `/customers/`, `/mechanics/`,
+`/service-tickets/`, or `/inventory/`. `db.create_all()` runs on startup, so
+new tables are created automatically.
+
+## Authentication
+
+1. Create a customer (or mechanic) with a `password` field.
+2. `POST /customers/login` (or `/mechanics/login`) with `email` + `password`.
+3. The response returns a `token`. Send it on protected routes as a header:
+
+```text
+Authorization: Bearer <token>
+```
+
+Customer tokens unlock customer routes; mechanic tokens unlock mechanic/inventory
+routes. Using the wrong token type returns `403`.
 
 ## Endpoints
 
+### Auth
+
+- `POST /customers/login` — returns a customer JWT
+- `POST /mechanics/login` — returns a mechanic JWT
+
 ### Customers
 
-- `POST /customers/`
-- `GET /customers/`
+- `POST /customers/` — create (rate limited 5/min; accepts `password`)
+- `GET /customers/?page=<n>&per_page=<n>` — paginated list (cached 60s)
 - `GET /customers/<int:customer_id>`
-- `PUT /customers/<int:customer_id>`
-- `DELETE /customers/<int:customer_id>`
+- `GET /customers/my-tickets` — **customer token**; tickets for the logged-in customer
+- `PUT /customers/` — **customer token**; updates the authenticated customer
+- `DELETE /customers/` — **customer token**; deletes the authenticated customer
 
 ### Mechanics
 
-- `POST /mechanics/`
+- `POST /mechanics/` — create (accepts `password`)
 - `GET /mechanics/`
+- `GET /mechanics/top` — mechanics ranked by tickets worked (busiest first)
+- `GET /mechanics/<int:id>`
 - `PUT /mechanics/<int:id>`
 - `DELETE /mechanics/<int:id>`
 
@@ -104,49 +128,71 @@ Note: there is no `/` route right now; start testing at `/customers/`, `/mechani
 
 - `POST /service-tickets/`
 - `GET /service-tickets/`
+- `GET /service-tickets/<int:ticket_id>`
+- `PUT /service-tickets/<int:ticket_id>`
+- `DELETE /service-tickets/<int:ticket_id>`
+- `PUT /service-tickets/<int:ticket_id>/edit` — **mechanic token**; bulk add/remove mechanics via `add_ids` / `remove_ids`
+- `POST /service-tickets/<int:ticket_id>/add-part` — **mechanic token**; attach an inventory part with a quantity
 - `PUT /service-tickets/<int:ticket_id>/assign-mechanic/<int:mechanic_id>`
 - `PUT /service-tickets/<int:ticket_id>/remove-mechanic/<int:mechanic_id>`
 
+### Inventory
+
+- `POST /inventory/` — **mechanic token**
+- `GET /inventory/`
+- `GET /inventory/<int:inventory_id>`
+- `PUT /inventory/<int:inventory_id>` — **mechanic token**
+- `DELETE /inventory/<int:inventory_id>` — **mechanic token**
+
 ## Quick Request Examples
 
-Create customer:
+Create customer (include a password to enable login):
 
 ```json
 {
   "first_name": "Jane",
   "last_name": "Doe",
   "email": "jane@example.com",
+  "password": "secret123",
   "phone": "555-123-4567",
-  "address_line1": "123 Main St",
   "city": "Denver",
   "state": "CO",
   "postal_code": "80202"
 }
 ```
 
-Create service ticket:
+Login:
 
 ```json
 {
-  "customer_id": 1,
-  "vehicle_id": 1,
-  "status": "open",
-  "odometer_in": 92000,
-  "complaint": "Brake noise while stopping"
+  "email": "jane@example.com",
+  "password": "secret123"
 }
 ```
 
-Assign mechanic to ticket:
+Bulk edit a ticket's mechanics:
 
 ```json
 {
-  "role": "Lead Technician",
-  "hours_worked": 1.5
+  "add_ids": [1, 2],
+  "remove_ids": [3]
+}
+```
+
+Add a part to a ticket:
+
+```json
+{
+  "inventory_id": 1,
+  "quantity": 2
 }
 ```
 
 ## Notes
 
-- `db.create_all()` is called on startup, so tables are auto-created if they do not exist.
 - A Postman collection is included: `Mechanic Shop API.postman_collection.json`.
-- `config.py` currently stores DB credentials in code; moving this to environment variables is recommended.
+  Run the **Auth** folder first — the login requests auto-save tokens into the
+  `{{customer_token}}` and `{{mechanic_token}}` collection variables used by
+  protected requests.
+- `config.py` stores DB credentials in code; moving them to environment
+  variables is recommended.
