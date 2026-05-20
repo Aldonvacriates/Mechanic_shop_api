@@ -138,7 +138,7 @@ class Mechanic(db.Model):
 # =========================================================
 # Stores repair/service records.
 # Each service ticket belongs to one customer and one vehicle.
-# A service ticket can have many mechanics and many parts.
+# A service ticket can have many mechanics and many inventory parts.
 class ServiceTicket(db.Model):
     """Repair order for a customer vehicle visit.
 
@@ -166,13 +166,6 @@ class ServiceTicket(db.Model):
         "TicketMechanic",
         back_populates="service_ticket",
         # Why: assignment rows are meaningful only while their ticket exists.
-        cascade="all, delete-orphan",
-    )
-
-    parts = db.relationship(
-        "TicketPart",
-        back_populates="service_ticket",
-        # Why: part usage rows should not remain after a ticket is deleted.
         cascade="all, delete-orphan",
     )
 
@@ -218,70 +211,6 @@ class TicketMechanic(db.Model):
 
     def __repr__(self):
         return f"<TicketMechanic ticket={self.ticket_id} mechanic={self.mechanic_id}>"
-
-
-# =========================================================
-# Part Model
-# =========================================================
-# Stores parts inventory.
-# A part can be used in many service tickets.
-class Part(db.Model):
-    """Parts inventory record.
-
-    Why: inventory is tracked separately so the same part can be reused on many
-    tickets.
-    """
-
-    __tablename__ = "parts"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    sku = db.Column(db.String(100), unique=True)
-    unit_price = db.Column(db.Numeric(10, 2))
-    quantity_on_hand = db.Column(db.Integer, default=0)
-
-    ticket_parts = db.relationship(
-        "TicketPart",
-        back_populates="part",
-        # Why: usage rows must be removed when a part is deleted.
-        cascade="all, delete-orphan",
-    )
-
-    def __repr__(self):
-        return f"<Part {self.name}>"
-
-
-# =========================================================
-# TicketPart Model
-# =========================================================
-# Join table between service tickets and parts.
-# Tracks quantity and unit price used on a ticket.
-class TicketPart(db.Model):
-    """Join entity connecting parts to tickets.
-
-    Why: quantity and price can vary per ticket, so they belong on the join row.
-    """
-
-    __tablename__ = "ticket_parts"
-
-    ticket_id = db.Column(
-        db.Integer,
-        db.ForeignKey("service_tickets.id"),
-        primary_key=True,
-    )
-    part_id = db.Column(
-        db.Integer,
-        db.ForeignKey("parts.id"),
-        primary_key=True,
-    )
-    quantity = db.Column(db.Integer, nullable=False, default=1)
-    unit_price = db.Column(db.Numeric(10, 2))
-
-    service_ticket = db.relationship("ServiceTicket", back_populates="parts")
-    part = db.relationship("Part", back_populates="ticket_parts")
-
-    def __repr__(self):
-        return f"<TicketPart ticket={self.ticket_id} part={self.part_id}>"
 
 
 # =========================================================
