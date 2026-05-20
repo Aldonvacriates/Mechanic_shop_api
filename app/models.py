@@ -119,6 +119,8 @@ class Mechanic(db.Model):
     salary = db.Column(db.Numeric(10, 2))
     hire_date = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    # Why: enables mechanic login; stored as a salted hash, never plaintext.
+    password_hash = db.Column(db.String(255))
 
     ticket_assignments = db.relationship(
         "TicketMechanic",
@@ -171,6 +173,13 @@ class ServiceTicket(db.Model):
         "TicketPart",
         back_populates="service_ticket",
         # Why: part usage rows should not remain after a ticket is deleted.
+        cascade="all, delete-orphan",
+    )
+
+    inventory_items = db.relationship(
+        "ServiceTicketInventory",
+        back_populates="service_ticket",
+        # Why: inventory usage rows are meaningful only while their ticket exists.
         cascade="all, delete-orphan",
     )
 
@@ -273,3 +282,70 @@ class TicketPart(db.Model):
 
     def __repr__(self):
         return f"<TicketPart ticket={self.ticket_id} part={self.part_id}>"
+
+
+# =========================================================
+# Inventory Model
+# =========================================================
+# Tracks shop inventory parts available to put on service tickets.
+# One part can be used on many tickets; one ticket can require many parts.
+class Inventory(db.Model):
+    """Inventory part available to the shop.
+
+    Why: a single source of truth for parts the shop stocks, linked to tickets
+    through a junction so the same part can appear on many tickets.
+    """
+
+    __tablename__ = "inventory"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+
+    ticket_items = db.relationship(
+        "ServiceTicketInventory",
+        back_populates="inventory_item",
+        # Why: usage rows must be removed when an inventory part is deleted.
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self):
+        return f"<Inventory {self.name}>"
+
+
+# =========================================================
+# ServiceTicketInventory Model
+# =========================================================
+# Junction table between service tickets and inventory parts.
+# Carries quantity so the same part can be used in different amounts per ticket.
+class ServiceTicketInventory(db.Model):
+    """Join entity linking inventory parts to service tickets.
+
+    Why: quantity belongs to the pairing (this part, on this ticket), not to the
+    part or ticket alone, so it lives on the junction row.
+    """
+
+    __tablename__ = "service_ticket_inventory"
+
+    ticket_id = db.Column(
+        db.Integer,
+        db.ForeignKey("service_tickets.id"),
+        primary_key=True,
+    )
+    inventory_id = db.Column(
+        db.Integer,
+        db.ForeignKey("inventory.id"),
+        primary_key=True,
+    )
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+
+    service_ticket = db.relationship(
+        "ServiceTicket", back_populates="inventory_items"
+    )
+    inventory_item = db.relationship("Inventory", back_populates="ticket_items")
+
+    def __repr__(self):
+        return (
+            f"<ServiceTicketInventory ticket={self.ticket_id} "
+            f"inventory={self.inventory_id} qty={self.quantity}>"
+        )

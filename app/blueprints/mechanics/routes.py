@@ -7,11 +7,37 @@ checks, so route behavior stays consistent.
 from flask import request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy import select, func
+from werkzeug.security import generate_password_hash, check_password_hash
 
+from app.auth import encode_mechanic_token
 from app.extensions import db
 from app.models import Mechanic, TicketMechanic
 from . import mechanics_bp
-from .schemas import mechanic_schema, mechanics_schema
+from .schemas import mechanic_schema, mechanics_schema, mechanic_login_schema
+
+
+@mechanics_bp.route("/login", methods=["POST"])
+def mechanic_login():
+    """Validate mechanic credentials and return a mechanic-scoped JWT."""
+
+    try:
+        creds = mechanic_login_schema.load(request.get_json() or {})
+    except ValidationError as e:
+        return jsonify(e.messages), 400
+
+    mechanic = db.session.execute(
+        select(Mechanic).where(Mechanic.email == creds["email"])
+    ).scalar_one_or_none()
+
+    # Why: identical error for unknown email vs wrong password to avoid leaking
+    # which emails belong to real mechanics.
+    if not mechanic or not mechanic.password_hash or not check_password_hash(
+        mechanic.password_hash, creds["password"]
+    ):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    token = encode_mechanic_token(mechanic.id)
+    return jsonify({"token": token, "mechanic_id": mechanic.id}), 200
 
 
 @mechanics_bp.route("/", methods=["POST"])
@@ -23,6 +49,9 @@ def create_mechanic():
     except ValidationError as e:
         return jsonify(e.messages), 400
 
+    # Why: store only the hash; the raw password must never be persisted.
+    raw_password = mechanic_data.pop("password", None)
+
     # Why: mechanic email is used as a unique contact identifier.
     if mechanic_data.get("email"):
         query = select(Mechanic).where(Mechanic.email == mechanic_data["email"])
@@ -32,6 +61,9 @@ def create_mechanic():
             return jsonify({"error": "Email already associated with a mechanic."}), 400
 
     new_mechanic = Mechanic(**mechanic_data)
+    if raw_password:
+        new_mechanic.password_hash = generate_password_hash(raw_password)
+
     db.session.add(new_mechanic)
     db.session.commit()
 
